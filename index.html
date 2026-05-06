@@ -1,12 +1,245 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlameShop — Streetwear Exhibition</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
+        body.dark-theme { background-color: #0a0a0a; color: white; }
+        body.light-theme { background-color: #ffffff; color: black; }
+        
+        .glass { backdrop-filter: blur(20px); border: 1px solid rgba(128,128,128,0.1); }
+        .dark-theme .glass { background: rgba(255, 255, 255, 0.03); }
+        .light-theme .glass { background: rgba(0, 0, 0, 0.03); }
+        
+        .bg-blur { position: fixed; inset: 0; z-index: -1; background: url('br.png') center/cover no-repeat; filter: blur(60px); opacity: 0.3; }
+        
+        /* Затемнение фона при наведении на помощь */
+        .help-group:hover ~ main, .help-group:hover ~ footer { filter: brightness(0.5); transition: 0.3s; }
+        
+        .cart-drawer { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .cart-drawer.open { transform: translateX(0); }
+        .modal { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .modal.active { display: flex; opacity: 1; }
+        
+        .animate-marquee { display: flex; width: 200%; animation: marquee 30s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        
+        .dark-theme .logo-box { background: white; color: black; }
+        .light-theme .logo-box { background: black; color: white; }
+    </style>
+</head>
+<body class="dark-theme">
+    <div class="bg-blur"></div>
+
+    <header class="sticky top-0 z-40 w-full glass px-6 py-5 flex justify-between items-center">
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <span class="text-3xl font-black italic logo-box px-2 py-1">BLAME</span>
+                <span class="text-3xl font-black italic">SHOP</span>
+            </div>
+            
+            <div class="hidden md:block relative group help-group">
+                <button class="px-4 py-2 text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-all">Помощь ↓</button>
+                <div class="absolute top-full left-0 mt-2 w-48 glass rounded-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                    <button onclick="openInfo('delivery')" class="w-full text-left px-6 py-3 text-[10px] font-black uppercase hover:bg-current hover:text-white theme-invert">Доставка</button>
+                    <button onclick="openInfo('about')" class="w-full text-left px-6 py-3 text-[10px] font-black uppercase hover:bg-current hover:text-white theme-invert">О нас</button>
+                </div>
+            </div>
+            
+            <button onclick="toggleTheme()" class="p-2 glass rounded-full"><i data-lucide="sun" id="theme-icon"></i></button>
+        </div>
+
+        <button onclick="toggleCart(true)" class="relative p-2.5 glass rounded-lg">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+            <span id="cart-count" class="absolute -top-1 -right-1 bg-cyan-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full hidden">0</span>
+        </button>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-12 transition-all duration-300">
+        <div class="mb-10 overflow-hidden glass py-5 rounded-xl">
+            <div class="animate-marquee gap-12">
+                <span class="text-xl font-black italic uppercase tracking-[0.3em] opacity-10">BLAME SHOP • LIMITED DROPS • STREETWEAR EXHIBITION •</span>
+                <span class="text-xl font-black italic uppercase tracking-[0.3em] opacity-10">BLAME SHOP • LIMITED DROPS • STREETWEAR EXHIBITION •</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row justify-between gap-8 mb-16">
+            <div id="category-filters" class="flex flex-wrap gap-2"></div>
+            <input type="text" id="search-input" placeholder="ПОИСК..." oninput="handleSearch()" class="glass px-11 py-3 w-full md:w-80 font-bold uppercase text-[11px] rounded-full outline-none">
+        </div>
+
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10"></div>
+    </main>
+
+    <!-- ВОТ ЭТОТ ФУТЕР Я ВЕРНУЛ[cite: 3] -->
+    <footer class="mt-32 border-t border-white/5 glass px-6 py-20 transition-all duration-300">
+        <div class="max-w-7xl mx-auto text-center">
+            <h3 class="text-3xl font-black italic uppercase mb-4">BLAME SHOP</h3>
+            <p class="text-[11px] font-bold uppercase text-gray-500 mb-10 max-w-md mx-auto">Выставка авторской одежды. Сделано с душой. Каждый дроп — это история.</p>
+            <div class="flex justify-center gap-8 text-[12px] font-black uppercase opacity-60 mb-12">
+                <button onclick="openInfo('delivery')">Доставка</button>
+                <button onclick="openInfo('about')">О нас</button>
+                <button onclick="openInfo('contacts')">Контакты</button>
+            </div>
+            <div class="text-[9px] font-black uppercase tracking-[0.3em] opacity-20">© 2026 Leporet • UFA</div>
+        </div>
+    </footer>
+
+    <!-- Cart Drawer -->
+    <div id="cart-overlay" onclick="toggleCart(false)" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] hidden opacity-0 transition-opacity"></div>
+    <div id="cart-drawer" class="cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-white text-black z-[60] p-8 flex flex-col">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-black uppercase italic">Корзина</h2>
+            <button onclick="toggleCart(false)"><i data-lucide="x"></i></button>
+        </div>
+        <div id="cart-items" class="flex-1 overflow-y-auto space-y-4"></div>
+        <div class="mt-8 pt-8 border-t border-black/10">
+            <div class="flex justify-between mb-4 font-black"><span>Итого:</span><span id="cart-total">0 ₽</span></div>
+            <button onclick="copyOrder()" class="w-full py-4 bg-black text-white font-black text-[10px] uppercase mb-4">Копировать текст заказа</button>
+            <div class="grid grid-cols-2 gap-2 font-black text-[9px] uppercase">
+                <a href="https://t.me/telegram" target="_blank" class="py-4 bg-[#0088cc] text-white text-center">Написать в ТГ</a>
+                <a href="https://t.me/maks" target="_blank" class="py-4 bg-zinc-800 text-white text-center">Написать Максу</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal" class="modal fixed inset-0 z-[100] items-center justify-center p-4 bg-black/80 backdrop-blur-md" onclick="closeProductModal()">
+        <div class="bg-white text-black w-full max-w-4xl flex flex-col md:flex-row rounded-sm overflow-hidden" onclick="event.stopPropagation()">
+            <div class="w-full md:w-1/2 bg-zinc-100"><img id="modal-img" class="w-full h-full object-cover"></div>
+            <div class="w-full md:w-1/2 p-10 flex flex-col">
+                <h2 id="modal-title" class="text-3xl font-black uppercase italic mb-2"></h2>
+                <p id="modal-price" class="text-xl font-bold mb-8"></p>
+                <div class="mb-8">
+                    <p class="text-[10px] font-black uppercase opacity-30 mb-3">Размер</p>
+                    <div id="modal-sizes" class="flex gap-2"></div>
+                </div>
+                <button id="add-to-cart-btn" class="mt-auto w-full py-5 bg-black text-white font-black uppercase text-[10px]">Добавить в корзину</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal (ТВОИ ТЕКСТЫ)[cite: 3, 4] -->
+    <div id="info-modal" class="modal fixed inset-0 z-[100] items-center justify-center p-4 bg-black/80 backdrop-blur-md" onclick="closeInfoModal()">
+        <div class="bg-white text-black p-10 max-w-lg w-full rounded-sm relative" onclick="event.stopPropagation()">
+            <button onclick="closeInfoModal()" class="absolute top-4 right-4"><i data-lucide="x"></i></button>
+            <h2 id="info-title" class="text-2xl font-black uppercase italic mb-6 border-b-2 border-black inline-block"></h2>
+            <p id="info-text" class="text-[13px] font-medium leading-relaxed italic opacity-70 whitespace-pre-wrap"></p>
+        </div>
+    </div>
+
+    <script>
+        const infoData = {
+            delivery: { title: "Доставка", text: "Доставка происходит по сдеку/почте/самовывозу/нашей личной доставке (если вы в уфе/кармаскалы/кабаково)." },
+            about: { title: "О нас", text: "Магазин создан 14-ти летним подростком как свой первый масштабный проект. Создан 05.05.26." },
+            contacts: { title: "Контакты", text: "ТГ Канал: @telegram_chan\nЛичка: @telegram\nМакс: @maks" }
+        };
+
+        let allProducts = [], cart = [], selectedSize = null;
+        const FOLDERS = ['1', '2', '3']; // Твои папки[cite: 3, 4]
+
+        async function init() {
+            lucide.createIcons();
+            for (const id of FOLDERS) {
+                try {
+                    const res = await fetch(`tshirts/${id}/config.txt`);
+                    const text = await res.text();
+                    const config = {};
+                    text.split('\n').forEach(l => { 
+                        const [k, ...v] = l.split(':'); 
+                        if(k) config[k.trim()] = v.join(':').trim(); 
+                    });
+                    allProducts.push({
+                        id, name: config['Название'], price: parseInt(config['Цена']), 
+                        sizes: config['Размеры'].split(','), cat: config['Категория'], img: `tshirts/${id}/1.png`
+                    });
+                } catch(e) { console.error(`Ошибка загрузки товара ${id}`); }
+            }
+            renderProducts(allProducts);
+            renderFilters();
+        }
+
+        function renderProducts(list) {
+            document.getElementById('product-grid').innerHTML = list.map(p => `
+                <div class="glass p-4 rounded-2xl group cursor-pointer" onclick="openProduct('${p.id}')">
+                    <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-zinc-900">
+                        <img src="${p.img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <h3 class="font-black uppercase">${p.name}</h3>
+                    <p class="font-mono opacity-40">${p.price} ₽</p>
+                </div>
+            `).join('');
+        }
+
+        function openProduct(id) {
+            const p = allProducts.find(x => x.id === id);
+            selectedSize = null;
+            document.getElementById('modal-img').src = p.img;
+            document.getElementById('modal-title').innerText = p.name;
+            document.getElementById('modal-price').innerText = `${p.price} ₽`;
+            document.getElementById('modal-sizes').innerHTML = p.sizes.map(s => `
+                <button onclick="selectSize(this, '${s.trim()}')" class="px-5 py-2 border border-black font-black text-[10px] uppercase transition-all">${s.trim()}</button>
+            `).join('');
+            document.getElementById('add-to-cart-btn').onclick = () => {
+                if(!selectedSize) return alert("Выбери размер!");
+                cart.push({...p, selectedSize});
+                updateCart(); closeProductModal(); toggleCart(true);
+            };
+            document.getElementById('product-modal').classList.add('active');
+        }
+
+        function updateCart() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = cart.map((i, idx) => `
+                <div class="flex justify-between items-center p-4 bg-zinc-50 rounded-sm">
+                    <div><p class="font-black uppercase text-[11px]">${i.name}</p><p class="text-[9px] opacity-40">${i.selectedSize} — ${i.price} ₽</p></div>
+                    <button onclick="cart.splice(${idx},1); updateCart()"><i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i></button>
+                </div>
+            `).join('');
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            document.getElementById('cart-total').innerText = `${total} ₽`;
+            document.getElementById('cart-count').innerText = cart.length;
+            document.getElementById('cart-count').classList.toggle('hidden', cart.length === 0);
+            lucide.createIcons();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            document.body.classList.toggle('light-theme');
+            const icon = document.getElementById('theme-icon');
+            icon.setAttribute('data-lucide', document.body.classList.contains('dark-theme') ? 'sun' : 'moon');
+            lucide.createIcons();
+        }
+
+        function toggleCart(s) {
+            const d = document.getElementById('cart-drawer'), o = document.getElementById('cart-overlay');
+            if(s) { d.classList.add('open'); o.classList.remove('hidden'); setTimeout(()=>o.style.opacity="1",10); }
+            else { d.classList.remove('open'); o.style.opacity="0"; setTimeout(()=>o.classList.add('hidden'),300); }
+        }
+
+        function selectSize(btn, s) { 
+            selectedSize = s; 
+            document.querySelectorAll('#modal-sizes button').forEach(b => b.classList.remove('bg-black', 'text-white'));
+            btn.classList.add('bg-black', 'text-white');
+        }
+
+        function copyOrder() {
+            const msg = `Заказ:\n${cart.map(i => `• ${i.name} [${i.selectedSize}]`).join('\n')}\nИтого: ${document.getElementById('cart-total').innerText}`;
+            navigator.clipboard.writeText(msg); alert("Текст заказа скопирован!");
+        }
+
+        function openInfo(t) { document.getElementById('info-title').innerText = infoData[t].title; document.getElementById('info-text').innerText = infoData[t].text; document.getElementById('info-modal').classList.add('active'); }
+        function closeProductModal() { document.getElementById('product-modal').classList.remove('active'); }
+        function closeInfoModal() { document.getElementById('info-modal').classList.remove('active'); }
+        function renderFilters() { const cats = ['Все', ...new Set(allProducts.map(p => p.cat))]; document.getElementById('category-filters').innerHTML = cats.map(c => `<button onclick="renderProducts('${c}'==='Все'?allProducts:allProducts.filter(p=>p.cat==='${c}'))" class="px-5 py-2 glass rounded-full text-[9px] font-black uppercase">${c}</button>`).join(''); }
+        function handleSearch() { const q = document.getElementById('search-input').value.toLowerCase(); renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(q))); }
+
+        window.onload = init;
+    </script>
+</body>
 </html>
