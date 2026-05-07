@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLAME SHOP — Streetwear Exhibition</title>
+    <title>BlameShop — Магазин одежды</title>
     
     <!-- Подключаем Реакты и Бабель -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -200,7 +200,7 @@
                 about: { title: "О нас", text: "Магазин создан 14-ти летним подростком как свой первый масштабный проект. Магазин был создан 05.05.26." },
                 contacts: { title: "Контакты", text: "Телеграм: @telegram\nМакс: @max" },
                 payment_help: { title: "Оплата", text: "Оплата пока что происходит по сбп лично в ЛС, скоро мы все автоматизируем и сделаем удобно." },
-                delivery_help: { title: "Доставка (Помощь)", text: "Бесплатная доставка в деревню Кабаково. В остальные города обсуждается лично." },
+                delivery_help: { title: "Доставка", text: "Бесплатная доставка по деревне Кабаково. В остальные города обсуждается лично." },
                 terms_help: { title: "Условия", text: "Возврат при самовывозе возможен только в первый день после покупки." }
             };
 
@@ -350,7 +350,7 @@
                                                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
                                                 onError={(e) => e.target.src = `https://picsum.photos/seed/${product.id}/400/533`}
                                             />
-                                            <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-full">{product.category}</div>
+                                            <div className={`absolute top-3 left-3 backdrop-blur-md px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-full ${theme === 'dark' ? 'bg-black/60 text-white border border-white/10' : 'bg-white/80 text-black'}`}>{product.category}</div>
                                         </div>
                                         <div className="px-1">
                                             <h3 className="font-black text-xl uppercase tracking-tight truncate mb-1.5 opacity-80">{product.name}</h3>
@@ -387,9 +387,9 @@
                                 <div>
                                     <h4 className="text-[10px] font-black uppercase mb-6 opacity-30 tracking-widest">Связь</h4>
                                     <ul className="space-y-3 text-[12px] font-black uppercase">
-                                        <li><a href="#" className="hover:opacity-50">TikTok @tiktok</a></li>
-                                        <li><a href="#" className="hover:opacity-50">YouTube @youtube</a></li>
-                                        <li><a href="#" className="hover:opacity-50">Telegram @telegramchannel</a></li>
+                                        <li><a href="https://www.tiktok.com/@blamett" target="_blank" className="hover:opacity-50">TikTok @blamett</a></li>
+                                        <li><a href="https://www.youtube.com/@blameyt" target="_blank" className="hover:opacity-50">YouTube @blameyt</a></li>
+                                        <li><a href="https://t.me/blamechannel" target="_blank" className="hover:opacity-50">Telegram @blamechannel</a></li>
                                     </ul>
                                 </div>
                             </div>
