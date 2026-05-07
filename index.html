@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlameShop — Магазин одежды</title>
+    <title>BLAME SHOP — Streetwear Exhibition</title>
     
     <!-- Подключаем Реакты и Бабель -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -156,6 +156,7 @@
             const [isLoading, setIsLoading] = useState(true);
             const [activeInfoModal, setActiveInfoModal] = useState(null);
             const [isHelpMenuOpen, setIsHelpMenuOpen] = useState(false);
+            const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
             useEffect(() => {
@@ -437,9 +438,54 @@
                                     transition={{ type: 'tween', duration: 0.3 }}
                                     className={`relative h-full w-full max-w-md border-l flex flex-col shadow-2xl transition-colors ${theme === 'dark' ? 'bg-zinc-900 border-white/5' : 'bg-white border-black/5'}`}
                                 >
-                                    <CartContent items={cart} theme={theme} onClose={() => setIsCartOpen(false)} onRemove={removeFromCart} />
+                                    <CartContent 
+                                        items={cart} 
+                                        theme={theme} 
+                                        onClose={() => setIsCartOpen(false)} 
+                                        onRemove={removeFromCart} 
+                                        onCheckout={() => { setIsCartOpen(false); setIsCheckoutModalOpen(true); }}
+                                    />
                                 </motion.div>
                             </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Модалка оформления заказа */}
+                    <AnimatePresence>
+                        {isCheckoutModalOpen && (
+                            <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" onClick={() => setIsCheckoutModalOpen(false)}>
+                                <motion.div 
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.9, opacity: 0 }}
+                                    className={`p-10 max-w-lg w-full border rounded-2xl shadow-2xl relative transition-colors ${theme === 'dark' ? 'bg-zinc-900 border-white/10' : 'bg-white border-black/5'}`} 
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <button onClick={() => setIsCheckoutModalOpen(false)} className="absolute top-6 right-6 opacity-30 hover:opacity-100"><Icon name="x" size={20} /></button>
+                                    <h2 className={`text-2xl font-black uppercase italic mb-6 font-display tracking-tight border-b-2 inline-block ${theme === 'dark' ? 'border-white' : 'border-black'}`}>Оформление</h2>
+                                    <p className="text-[14px] font-bold leading-relaxed mb-8 opacity-80 uppercase">
+                                        Пока что оплата происходит лично в ЛС. <br/><br/>
+                                        Скопируйте текст заказа в корзине и напишите нам в телеграмм или в макс.
+                                    </p>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <a 
+                                            href="https://t.me/blamels" 
+                                            target="_blank"
+                                            className={`py-4 flex flex-col items-center gap-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-xl ${theme === 'dark' ? 'bg-white text-black hover:bg-zinc-200' : 'bg-black text-white hover:opacity-80'}`}
+                                        >
+                                            <Icon name="send" size={18} /> @blamels
+                                        </a>
+                                        <a 
+                                            href="https://t.me/blamemaks" 
+                                            target="_blank"
+                                            className={`py-4 flex flex-col items-center gap-2 text-[10px] font-black uppercase rounded-xl transition-all shadow-xl ${theme === 'dark' ? 'bg-white text-black hover:bg-zinc-200' : 'bg-black text-white hover:opacity-80'}`}
+                                        >
+                                            <Icon name="user" size={18} /> @blamemaks
+                                        </a>
+                                    </div>
+                                </motion.div>
+                            </div>
                         )}
                     </AnimatePresence>
 
@@ -538,7 +584,7 @@
             );
         }
 
-        function CartContent({ items, theme, onClose, onRemove }) {
+        function CartContent({ items, theme, onClose, onRemove, onCheckout }) {
             const total = items.reduce((s, i) => s + (i.discountPrice || i.price) * i.quantity, 0);
             const [copied, setCopied] = useState(false);
 
@@ -549,9 +595,23 @@
             }, [items, total]);
 
             const copy = () => {
-                navigator.clipboard.writeText(orderMsg);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = orderMsg;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(orderMsg);
+                    }
+                    
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
             };
 
             return (
@@ -601,6 +661,7 @@
                         </div>
                         <button 
                             disabled={items.length === 0} 
+                            onClick={onCheckout}
                             className={`w-full py-5 font-black uppercase tracking-widest text-[11px] rounded-xl active:scale-[0.98] transition-all ${
                                 items.length > 0 
                                 ? (theme === 'dark' ? 'bg-white text-black shadow-xl' : 'bg-black text-white shadow-xl') 
