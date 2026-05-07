@@ -3,243 +3,619 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlameShop — Streetwear Exhibition</title>
+    <title>BLAME SHOP — Streetwear Exhibition</title>
+    
+    <!-- Подключаем Реакты и Бабель -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Framer Motion -->
+    <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.16.16/dist/framer-motion.js"></script>
+    
+    <!-- Иконки Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Шрифты -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:ital,wght@0,900;1,900&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
-        body.dark-theme { background-color: #0a0a0a; color: white; }
-        body.light-theme { background-color: #ffffff; color: black; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F0F0F2;
+            color: #1A1A1A;
+            margin: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body.dark {
+            background-color: #0A0A0C;
+            color: #FDFDFD;
+        }
         
-        .glass { backdrop-filter: blur(20px); border: 1px solid rgba(128,128,128,0.1); }
-        .dark-theme .glass { background: rgba(255, 255, 255, 0.03); }
-        .light-theme .glass { background: rgba(0, 0, 0, 0.03); }
+        .font-display { font-family: 'Montserrat', sans-serif; }
         
-        .bg-blur { position: fixed; inset: 0; z-index: -1; background: url('br.png') center/cover no-repeat; filter: blur(60px); opacity: 0.3; }
+        /* Кастомный блюр фона через CSS */
+        .bg-blur-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: url('/br.png');
+            background-size: cover;
+            background-position: center;
+            filter: blur(80px) saturate(1.5);
+            opacity: 0.3;
+            pointer-events: none;
+            transition: opacity 0.5s ease, filter 0.5s ease;
+        }
+        body.dark .bg-blur-layer {
+            opacity: 0.15;
+            filter: blur(100px) saturate(1.8) brightness(0.5);
+        }
+
+        .neo-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .neo-shadow-lg { box-shadow: 0 20px 50px rgba(0,0,0,0.08); }
         
-        /* Затемнение фона при наведении на помощь */
-        .help-group:hover ~ main, .help-group:hover ~ footer { filter: brightness(0.5); transition: 0.3s; }
-        
-        .cart-drawer { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .cart-drawer.open { transform: translateX(0); }
-        .modal { display: none; opacity: 0; transition: opacity 0.3s ease; }
-        .modal.active { display: flex; opacity: 1; }
-        
-        .animate-marquee { display: flex; width: 200%; animation: marquee 30s linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        
-        .dark-theme .logo-box { background: white; color: black; }
-        .light-theme .logo-box { background: black; color: white; }
+        /* Анимация бегущей строки */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: inline-flex;
+            animation: marquee 40s linear infinite;
+        }
+
+        /* Плавные переходы для кнопок */
+        .neo-button {
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        .neo-button:hover {
+            background: #000;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* Скрытие полосы прокрутки */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        body.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
     </style>
 </head>
-<body class="dark-theme">
-    <div class="bg-blur"></div>
+<body>
+    <div id="root"></div>
 
-    <header class="sticky top-0 z-40 w-full glass px-6 py-5 flex justify-between items-center">
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-2">
-                <span class="text-3xl font-black italic logo-box px-2 py-1">BLAME</span>
-                <span class="text-3xl font-black italic">SHOP</span>
-            </div>
-            
-            <div class="hidden md:block relative group help-group">
-                <button class="px-4 py-2 text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-all">Помощь ↓</button>
-                <div class="absolute top-full left-0 mt-2 w-48 glass rounded-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                    <button onclick="openInfo('delivery')" class="w-full text-left px-6 py-3 text-[10px] font-black uppercase hover:bg-current hover:text-white theme-invert">Доставка</button>
-                    <button onclick="openInfo('about')" class="w-full text-left px-6 py-3 text-[10px] font-black uppercase hover:bg-current hover:text-white theme-invert">О нас</button>
-                </div>
-            </div>
-            
-            <button onclick="toggleTheme()" class="p-2 glass rounded-full"><i data-lucide="sun" id="theme-icon"></i></button>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        
+        // Безопасное получение Motion
+        const MotionLib = window.Motion || window.FramerMotion || {};
+        const motion = MotionLib.motion || {
+            div: 'div', span: 'span', button: 'button', header: 'header', 
+            main: 'main', footer: 'footer', i: 'i', img: 'img', section: 'section', nav: 'nav'
+        };
+        const AnimatePresence = MotionLib.AnimatePresence || (({children}) => children);
 
-        <button onclick="toggleCart(true)" class="relative p-2.5 glass rounded-lg">
-            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-            <span id="cart-count" class="absolute -top-1 -right-1 bg-cyan-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full hidden">0</span>
-        </button>
-    </header>
-
-    <main class="max-w-7xl mx-auto px-6 py-12 transition-all duration-300">
-        <div class="mb-10 overflow-hidden glass py-5 rounded-xl">
-            <div class="animate-marquee gap-12">
-                <span class="text-xl font-black italic uppercase tracking-[0.3em] opacity-10">BLAME SHOP • LIMITED DROPS • STREETWEAR EXHIBITION •</span>
-                <span class="text-xl font-black italic uppercase tracking-[0.3em] opacity-10">BLAME SHOP • LIMITED DROPS • STREETWEAR EXHIBITION •</span>
-            </div>
-        </div>
-
-        <div class="flex flex-col md:flex-row justify-between gap-8 mb-16">
-            <div id="category-filters" class="flex flex-wrap gap-2"></div>
-            <input type="text" id="search-input" placeholder="ПОИСК..." oninput="handleSearch()" class="glass px-11 py-3 w-full md:w-80 font-bold uppercase text-[11px] rounded-full outline-none">
-        </div>
-
-        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10"></div>
-    </main>
-
-    <!-- ВОТ ЭТОТ ФУТЕР Я ВЕРНУЛ[cite: 3] -->
-    <footer class="mt-32 border-t border-white/5 glass px-6 py-20 transition-all duration-300">
-        <div class="max-w-7xl mx-auto text-center">
-            <h3 class="text-3xl font-black italic uppercase mb-4">BLAME SHOP</h3>
-            <p class="text-[11px] font-bold uppercase text-gray-500 mb-10 max-w-md mx-auto">Выставка авторской одежды. Сделано с душой. Каждый дроп — это история.</p>
-            <div class="flex justify-center gap-8 text-[12px] font-black uppercase opacity-60 mb-12">
-                <button onclick="openInfo('delivery')">Доставка</button>
-                <button onclick="openInfo('about')">О нас</button>
-                <button onclick="openInfo('contacts')">Контакты</button>
-            </div>
-            <div class="text-[9px] font-black uppercase tracking-[0.3em] opacity-20">© 2026 Leporet • UFA</div>
-        </div>
-    </footer>
-
-    <!-- Cart Drawer -->
-    <div id="cart-overlay" onclick="toggleCart(false)" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[50] hidden opacity-0 transition-opacity"></div>
-    <div id="cart-drawer" class="cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-white text-black z-[60] p-8 flex flex-col">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-2xl font-black uppercase italic">Корзина</h2>
-            <button onclick="toggleCart(false)"><i data-lucide="x"></i></button>
-        </div>
-        <div id="cart-items" class="flex-1 overflow-y-auto space-y-4"></div>
-        <div class="mt-8 pt-8 border-t border-black/10">
-            <div class="flex justify-between mb-4 font-black"><span>Итого:</span><span id="cart-total">0 ₽</span></div>
-            <button onclick="copyOrder()" class="w-full py-4 bg-black text-white font-black text-[10px] uppercase mb-4">Копировать текст заказа</button>
-            <div class="grid grid-cols-2 gap-2 font-black text-[9px] uppercase">
-                <a href="https://t.me/telegram" target="_blank" class="py-4 bg-[#0088cc] text-white text-center">Написать в ТГ</a>
-                <a href="https://t.me/maks" target="_blank" class="py-4 bg-zinc-800 text-white text-center">Написать Максу</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Product Modal -->
-    <div id="product-modal" class="modal fixed inset-0 z-[100] items-center justify-center p-4 bg-black/80 backdrop-blur-md" onclick="closeProductModal()">
-        <div class="bg-white text-black w-full max-w-4xl flex flex-col md:flex-row rounded-sm overflow-hidden" onclick="event.stopPropagation()">
-            <div class="w-full md:w-1/2 bg-zinc-100"><img id="modal-img" class="w-full h-full object-cover"></div>
-            <div class="w-full md:w-1/2 p-10 flex flex-col">
-                <h2 id="modal-title" class="text-3xl font-black uppercase italic mb-2"></h2>
-                <p id="modal-price" class="text-xl font-bold mb-8"></p>
-                <div class="mb-8">
-                    <p class="text-[10px] font-black uppercase opacity-30 mb-3">Размер</p>
-                    <div id="modal-sizes" class="flex gap-2"></div>
-                </div>
-                <button id="add-to-cart-btn" class="mt-auto w-full py-5 bg-black text-white font-black uppercase text-[10px]">Добавить в корзину</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Info Modal (ТВОИ ТЕКСТЫ)[cite: 3, 4] -->
-    <div id="info-modal" class="modal fixed inset-0 z-[100] items-center justify-center p-4 bg-black/80 backdrop-blur-md" onclick="closeInfoModal()">
-        <div class="bg-white text-black p-10 max-w-lg w-full rounded-sm relative" onclick="event.stopPropagation()">
-            <button onclick="closeInfoModal()" class="absolute top-4 right-4"><i data-lucide="x"></i></button>
-            <h2 id="info-title" class="text-2xl font-black uppercase italic mb-6 border-b-2 border-black inline-block"></h2>
-            <p id="info-text" class="text-[13px] font-medium leading-relaxed italic opacity-70 whitespace-pre-wrap"></p>
-        </div>
-    </div>
-
-    <script>
-        const infoData = {
-            delivery: { title: "Доставка", text: "Доставка происходит по сдеку/почте/самовывозу/нашей личной доставке (если вы в уфе/кармаскалы/кабаково)." },
-            about: { title: "О нас", text: "Магазин создан 14-ти летним подростком как свой первый масштабный проект. Создан 05.05.26." },
-            contacts: { title: "Контакты", text: "ТГ Канал: @telegram_chan\nЛичка: @telegram\nМакс: @maks" }
+        // --- Иконки (пропсы для Lucide) ---
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
-        let allProducts = [], cart = [], selectedSize = null;
-        const FOLDERS = ['1', '2', '3']; // Твои папки[cite: 3, 4]
-
-        async function init() {
-            lucide.createIcons();
-            for (const id of FOLDERS) {
+        // --- ЗАГРУЗКА ДАННЫХ ---
+        const PRODUCT_IDS = ['1', '2', '3'];
+        
+        async function loadProducts() {
+            const products = [];
+            for (const id of PRODUCT_IDS) {
                 try {
-                    const res = await fetch(`tshirts/${id}/config.txt`);
-                    const text = await res.text();
+                    const response = await fetch(`/tshirts/${id}/config.txt`);
+                    if (!response.ok) continue;
+                    const text = await response.text();
                     const config = {};
-                    text.split('\n').forEach(l => { 
-                        const [k, ...v] = l.split(':'); 
-                        if(k) config[k.trim()] = v.join(':').trim(); 
+                    text.split('\n').forEach(line => {
+                        const [key, ...valueParts] = line.split(':');
+                        if (key && valueParts.length > 0) config[key.trim()] = valueParts.join(':').trim();
                     });
-                    allProducts.push({
-                        id, name: config['Название'], price: parseInt(config['Цена']), 
-                        sizes: config['Размеры'].split(','), cat: config['Категория'], img: `tshirts/${id}/1.png`
+
+                    products.push({
+                        id,
+                        name: config['Название'] || `T-Shirt ${id}`,
+                        price: parseInt(config['Цена']) || 0,
+                        discountPrice: config['Скидка'] ? parseInt(config['Скидка']) : undefined,
+                        description: config['Описание'] || '',
+                        sizes: (config['Размеры'] || '').split(',').map(s => s.trim()),
+                        category: config['Категория'] || 'Вещи',
+                        images: Array.from({ length: 5 }, (_, i) => `/tshirts/${id}/${i + 1}.png`)
                     });
-                } catch(e) { console.error(`Ошибка загрузки товара ${id}`); }
+                } catch (e) {
+                    console.error(`Error loading product ${id}`, e);
+                }
             }
-            renderProducts(allProducts);
-            renderFilters();
+            return products;
         }
 
-        function renderProducts(list) {
-            document.getElementById('product-grid').innerHTML = list.map(p => `
-                <div class="glass p-4 rounded-2xl group cursor-pointer" onclick="openProduct('${p.id}')">
-                    <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-zinc-900">
-                        <img src="${p.img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    </div>
-                    <h3 class="font-black uppercase">${p.name}</h3>
-                    <p class="font-mono opacity-40">${p.price} ₽</p>
-                </div>
-            `).join('');
-        }
+        function App() {
+            const [products, setProducts] = useState([]);
+            const [cart, setCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [selectedProduct, setSelectedProduct] = useState(null);
+            const [activeCategory, setActiveCategory] = useState('Все');
+            const [searchQuery, setSearchQuery] = useState('');
+            const [isLoading, setIsLoading] = useState(true);
+            const [activeInfoModal, setActiveInfoModal] = useState(null);
+            const [isHelpMenuOpen, setIsHelpMenuOpen] = useState(false);
+            const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
-        function openProduct(id) {
-            const p = allProducts.find(x => x.id === id);
-            selectedSize = null;
-            document.getElementById('modal-img').src = p.img;
-            document.getElementById('modal-title').innerText = p.name;
-            document.getElementById('modal-price').innerText = `${p.price} ₽`;
-            document.getElementById('modal-sizes').innerHTML = p.sizes.map(s => `
-                <button onclick="selectSize(this, '${s.trim()}')" class="px-5 py-2 border border-black font-black text-[10px] uppercase transition-all">${s.trim()}</button>
-            `).join('');
-            document.getElementById('add-to-cart-btn').onclick = () => {
-                if(!selectedSize) return alert("Выбери размер!");
-                cart.push({...p, selectedSize});
-                updateCart(); closeProductModal(); toggleCart(true);
+            useEffect(() => {
+                loadProducts().then(data => { 
+                    setProducts(data); 
+                    setIsLoading(false);
+                });
+            }, []);
+
+            useEffect(() => {
+                document.body.className = theme;
+                localStorage.setItem('theme', theme);
+            }, [theme]);
+
+            const categories = useMemo(() => ['Все', ...new Set(products.map(p => p.category))], [products]);
+            
+            const filteredProducts = useMemo(() => {
+                let filtered = activeCategory === 'Все' ? products : products.filter(p => p.category === activeCategory);
+                if (searchQuery.trim()) {
+                    const q = searchQuery.toLowerCase();
+                    filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+                }
+                return filtered;
+            }, [products, activeCategory, searchQuery]);
+
+            const addToCart = (product, size) => {
+                setCart(prev => {
+                    const existing = prev.find(i => i.id === product.id && i.selectedSize === size);
+                    if (existing) return prev.map(i => (i.id === product.id && i.selectedSize === size) ? { ...i, quantity: i.quantity + 1 } : i);
+                    return [...prev, { ...product, selectedSize: size, quantity: 1 }];
+                });
+                setSelectedProduct(null);
+                setIsCartOpen(true);
             };
-            document.getElementById('product-modal').classList.add('active');
-        }
 
-        function updateCart() {
-            const container = document.getElementById('cart-items');
-            container.innerHTML = cart.map((i, idx) => `
-                <div class="flex justify-between items-center p-4 bg-zinc-50 rounded-sm">
-                    <div><p class="font-black uppercase text-[11px]">${i.name}</p><p class="text-[9px] opacity-40">${i.selectedSize} — ${i.price} ₽</p></div>
-                    <button onclick="cart.splice(${idx},1); updateCart()"><i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i></button>
+            const removeFromCart = (id, size) => {
+                setCart(prev => prev.filter(i => !(i.id === id && i.selectedSize === size)));
+            };
+
+            const infoContent = {
+                delivery: { title: "Доставка", text: "Доставка происходит по сдеку/почте/самовывозу/нашей личной доставке и другими удобными для вас способами." },
+                about: { title: "О нас", text: "Магазин создан 14-ти летним подростком как свой первый масштабный проект. Магазин был создан 05.05.26." },
+                contacts: { title: "Контакты", text: "Телеграм: @telegram\nМакс: @max" },
+                payment_help: { title: "Оплата", text: "Оплата пока что происходит по сбп лично в ЛС, скоро мы все автоматизируем и сделаем удобно." },
+                delivery_help: { title: "Доставка (Помощь)", text: "Бесплатная доставка в деревню Кабаково. В остальные города обсуждается лично." },
+                terms_help: { title: "Условия", text: "Возврат при самовывозе возможен только в первый день после покупки." }
+            };
+
+            const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
+
+            return (
+                <div className="relative min-h-screen">
+                    <div className="bg-blur-layer"></div>
+
+                    {/* Header */}
+                    <header className={`sticky top-0 z-40 w-full backdrop-blur-xl border-b px-6 py-5 flex justify-between items-center transition-all ${theme === 'dark' ? 'bg-black/30 border-white/[0.05]' : 'bg-white/30 border-black/[0.03]'}`}>
+                        <div className="flex items-center gap-2 font-display cursor-pointer" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
+                            <motion.span 
+                                whileHover={{ y: -2, scale: 1.05 }}
+                                className={`text-3xl font-black tracking-tighter uppercase italic px-2 py-1 rounded-sm ${theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'}`}
+                            >
+                                BLAME
+                            </motion.span>
+                            <motion.span 
+                                whileHover={{ y: -2, scale: 1.05 }}
+                                className="text-3xl font-black tracking-tighter uppercase italic"
+                            >
+                                SHOP
+                            </motion.span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="hidden md:block relative">
+                                <button onClick={() => setIsHelpMenuOpen(!isHelpMenuOpen)} className="px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity">
+                                    Помощь {isHelpMenuOpen ? '↑' : '↓'}
+                                </button>
+                                <AnimatePresence>
+                                    {isHelpMenuOpen && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 10 }}
+                                            className={`absolute top-full right-0 mt-2 w-48 backdrop-blur-xl border rounded-xl py-2 shadow-xl ${theme === 'dark' ? 'bg-zinc-900/90 border-white/10' : 'bg-white/80 border-black/5'}`}
+                                        >
+                                            {['payment_help', 'delivery_help', 'terms_help'].map(key => (
+                                                <button key={key} onClick={() => { setActiveInfoModal(key); setIsHelpMenuOpen(false); }} className={`w-full text-left px-6 py-3 text-[10px] font-black uppercase transition-colors ${theme === 'dark' ? 'hover:bg-white hover:text-black' : 'hover:bg-black hover:text-white'}`}>
+                                                    {infoContent[key].title}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            
+                            <motion.button 
+                                whileHover={{ scale: 1.1, rotate: 10 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
+                                title="Сменить тему"
+                                className={`p-2 flex items-center justify-center rounded-lg border transition-all ${theme === 'dark' ? 'bg-white/10 border-white/10 text-white hover:bg-white hover:text-black' : 'bg-black/5 border-black/5 text-black hover:bg-black hover:text-white'}`}
+                            >
+                                <Icon name={theme === 'light' ? 'moon' : 'sun'} size={14} />
+                            </motion.button>
+
+                            <button onClick={() => setIsCartOpen(true)} className={`relative p-2.5 flex items-center justify-center rounded-lg border transition-all ${theme === 'dark' ? 'bg-white/10 border-white/10 text-white hover:bg-white hover:text-black' : 'bg-black/5 border-black/5 text-black hover:bg-black hover:text-white'}`}>
+                                <Icon name="shopping-bag" size={20} />
+                                {totalItems > 0 && (
+                                    <span className={`absolute -top-1 -right-1 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full ring-2 ${theme === 'dark' ? 'bg-red-500 ring-black' : 'bg-black ring-white'}`}>
+                                        {totalItems}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-6 py-12">
+                        {/* Маруки */}
+                        <div className="mb-20 overflow-hidden bg-white/10 backdrop-blur-md border border-black/[0.03] py-5 rounded-xl relative">
+                            <div className="animate-marquee whitespace-nowrap">
+                                {[...Array(20)].map((_, i) => (
+                                    <span key={i} className="text-xl font-black italic uppercase tracking-[0.3em] opacity-10 mx-6">
+                                        BLAME SHOP • LIMITED DROPS • STREETWEAR EXHIBITION • AUTHENTIC
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Фильтры и Поиск */}
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16 px-2">
+                            <div className="flex flex-wrap gap-2.5">
+                                {categories.map(cat => (
+                                    <motion.button 
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        key={cat} 
+                                        onClick={() => setActiveCategory(cat)} 
+                                        className={`px-6 py-2.5 font-black uppercase text-[10px] tracking-[0.15em] transition-all rounded-full border ${
+                                            activeCategory === cat 
+                                            ? (theme === 'dark' ? 'bg-white text-black border-white' : 'bg-black text-white border-black') + ' scale-105 shadow-xl' 
+                                            : (theme === 'dark' ? 'bg-white/5 text-white/40 border-white/5' : 'bg-white/20 text-black/40 border-black/[0.03]') + ' hover:border-white/20 hover:text-white'
+                                        }`}
+                                    >
+                                        {cat}
+                                    </motion.button>
+                                ))}
+                            </div>
+                            <div className="relative w-full md:w-80">
+                                <input 
+                                    type="text" 
+                                    placeholder="ПОИСК..." 
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className={`backdrop-blur-md border px-12 py-3 w-full font-bold uppercase text-[11px] focus:outline-none transition-all rounded-full ${
+                                        theme === 'dark' ? 'bg-white/5 border-white/5 text-white focus:border-white/20' : 'bg-white/20 border-black/[0.03] text-black focus:border-black/10'
+                                    }`}
+                                />
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20"><Icon name="search" size={16} /></div>
+                                {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 hover:opacity-100"><Icon name="x" size={14} /></button>}
+                            </div>
+                        </div>
+
+                        {/* Сетка товаров */}
+                        <motion.div 
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10"
+                        >
+                            {isLoading ? (
+                                [1,2,3].map(i => <div key={i} className="aspect-[3/4] bg-white/10 animate-pulse rounded-2xl"></div>)
+                            ) : filteredProducts.length === 0 ? (
+                                <div className="col-span-full py-20 flex flex-col items-center justify-center opacity-20 border-2 border-dashed border-black/10 rounded-3xl">
+                                    <Icon name="search-x" size={48} />
+                                    <p className="mt-4 font-black uppercase tracking-widest">Ничего не найдено</p>
+                                </div>
+                            ) : (
+                                filteredProducts.map((product, idx) => (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 20 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ duration: 0.5, delay: Math.min(idx * 0.1, 0.4) }}
+                                        key={product.id} 
+                                        onClick={() => setSelectedProduct(product)}
+                                        className={`group cursor-pointer backdrop-blur-lg border p-4 rounded-2xl transition-all hover:-translate-y-2 hover:shadow-2xl relative ${theme === 'dark' ? 'bg-white/5 border-white/[0.05]' : 'bg-white/20 border-black/[0.03]'}`}
+                                    >
+                                        {product.discountPrice && (
+                                            <div className="absolute top-6 right-6 z-10 bg-red-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-full shadow-lg -rotate-12 translate-x-2">
+                                                -{Math.round((1 - product.discountPrice / product.price) * 100)}%
+                                            </div>
+                                        )}
+                                        <div className="aspect-[3/4] overflow-hidden mb-5 relative bg-black/5 rounded-xl">
+                                            <img 
+                                                src={product.images[0]} 
+                                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                                                onError={(e) => e.target.src = `https://picsum.photos/seed/${product.id}/400/533`}
+                                            />
+                                            <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-full">{product.category}</div>
+                                        </div>
+                                        <div className="px-1">
+                                            <h3 className="font-black text-xl uppercase tracking-tight truncate mb-1.5 opacity-80">{product.name}</h3>
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex gap-2 items-baseline">
+                                                    <span className="font-mono text-base font-bold opacity-30">{product.discountPrice || product.price} ₽</span>
+                                                    {product.discountPrice && <span className="font-mono text-[11px] opacity-10 line-through italic">{product.price} ₽</span>}
+                                                </div>
+                                                <span className="text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">Смотреть</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )}
+                        </motion.div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="mt-32 border-t border-black/[0.03] bg-white/10 backdrop-blur-2xl px-6 py-20">
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+                            <div>
+                                <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-4 font-display">BLAME SHOP</h3>
+                                <p className="text-[11px] font-bold uppercase tracking-tight text-gray-400 max-w-[240px]">Создано как первый масштабный проект. Каждый дроп — это история.</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-8 md:col-span-2">
+                                <div>
+                                    <h4 className="text-[10px] font-black uppercase mb-6 opacity-30 tracking-widest">Информация</h4>
+                                    <ul className="space-y-3 text-[12px] font-black uppercase">
+                                        <li><button onClick={() => setActiveInfoModal('delivery')} className="hover:opacity-50">Доставка</button></li>
+                                        <li><button onClick={() => setActiveInfoModal('about')} className="hover:opacity-50">О нас</button></li>
+                                        <li><button onClick={() => setActiveInfoModal('contacts')} className="hover:opacity-50">Контакты</button></li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 className="text-[10px] font-black uppercase mb-6 opacity-30 tracking-widest">Связь</h4>
+                                    <ul className="space-y-3 text-[12px] font-black uppercase">
+                                        <li><a href="#" className="hover:opacity-50">TikTok @tiktok</a></li>
+                                        <li><a href="#" className="hover:opacity-50">YouTube @youtube</a></li>
+                                        <li><a href="#" className="hover:opacity-50">Telegram @telegramchannel</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+
+                    {/* Модалка товара */}
+                    <AnimatePresence>
+                        {selectedProduct && (
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+                                onClick={() => setSelectedProduct(null)}
+                            >
+                                <motion.div 
+                                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                    className={`w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row rounded-2xl shadow-2xl transition-colors ${theme === 'dark' ? 'bg-zinc-900 text-white' : 'bg-white text-black'}`} 
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <ProductModalContent product={selectedProduct} theme={theme} onAdd={addToCart} onClose={() => setSelectedProduct(null)} />
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Корзина */}
+                    <AnimatePresence>
+                        {isCartOpen && (
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-[60] flex justify-end"
+                            >
+                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={() => setIsCartOpen(false)}></div>
+                                <motion.div 
+                                    initial={{ x: '100%' }}
+                                    animate={{ x: 0 }}
+                                    exit={{ x: '100%' }}
+                                    transition={{ type: 'tween', duration: 0.3 }}
+                                    className={`relative h-full w-full max-w-md border-l flex flex-col shadow-2xl transition-colors ${theme === 'dark' ? 'bg-zinc-900 border-white/5' : 'bg-white border-black/5'}`}
+                                >
+                                    <CartContent items={cart} theme={theme} onClose={() => setIsCartOpen(false)} onRemove={removeFromCart} />
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Инфо-модалки */}
+                    <AnimatePresence>
+                        {activeInfoModal && (
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-md" 
+                                onClick={() => setActiveInfoModal(null)}
+                            >
+                                <motion.div 
+                                    initial={{ scale: 0.95, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.95, opacity: 0 }}
+                                    className={`backdrop-blur-2xl p-10 max-w-lg w-full border rounded-2xl shadow-2xl relative transition-colors ${theme === 'dark' ? 'bg-zinc-900/90 border-white/10' : 'bg-white/90 border-black/5'}`} 
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <button onClick={() => setActiveInfoModal(null)} className="absolute top-6 right-6 opacity-30 hover:opacity-100"><Icon name="x" size={20} /></button>
+                                    <h2 className={`text-2xl font-black uppercase italic mb-6 font-display tracking-tight border-b-2 inline-block ${theme === 'dark' ? 'border-white' : 'border-black'}`}>{infoContent[activeInfoModal].title}</h2>
+                                    <p className="text-[13px] font-medium leading-relaxed opacity-60 italic whitespace-pre-wrap">{infoContent[activeInfoModal].text}</p>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-            `).join('');
-            const total = cart.reduce((s, i) => s + i.price, 0);
-            document.getElementById('cart-total').innerText = `${total} ₽`;
-            document.getElementById('cart-count').innerText = cart.length;
-            document.getElementById('cart-count').classList.toggle('hidden', cart.length === 0);
-            lucide.createIcons();
+            );
         }
 
-        function toggleTheme() {
-            document.body.classList.toggle('dark-theme');
-            document.body.classList.toggle('light-theme');
-            const icon = document.getElementById('theme-icon');
-            icon.setAttribute('data-lucide', document.body.classList.contains('dark-theme') ? 'sun' : 'moon');
-            lucide.createIcons();
+        function ProductModalContent({ product, theme, onAdd, onClose }) {
+            const [imgIdx, setImgIdx] = useState(0);
+            const [size, setSize] = useState(null);
+            return (
+                <React.Fragment>
+                    <div className="relative w-full md:w-3/5 aspect-square md:aspect-auto h-full bg-black/5 group">
+                        <img 
+                            src={`/tshirts/${product.id}/${imgIdx + 1}.png`} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => e.target.src = `https://picsum.photos/seed/${product.id}-${imgIdx}/800/1000`}
+                        />
+                        <div className="absolute inset-0 flex justify-between items-center px-4 opacity-0 group-hover:opacity-100 transition-all">
+                            <button onClick={() => setImgIdx((imgIdx - 1 + 5) % 5)} className="bg-black text-white p-2 rounded-full cursor-pointer"><Icon name="chevron-left" /></button>
+                            <button onClick={() => setImgIdx((imgIdx + 1) % 5)} className="bg-black text-white p-2 rounded-full cursor-pointer"><Icon name="chevron-right" /></button>
+                        </div>
+                    </div>
+                    <div className={`w-full md:w-2/5 p-8 flex flex-col overflow-y-auto ${theme === 'dark' ? 'bg-zinc-900' : 'bg-white'}`}>
+                        <div className="flex justify-between items-start mb-8">
+                            <div className="font-display">
+                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 mb-2 inline-block tracking-widest ${theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'}`}>{product.category}</span>
+                                <h2 className="text-4xl font-black uppercase italic tracking-tighter leading-none">{product.name}</h2>
+                            </div>
+                            <button onClick={onClose} className="opacity-20 hover:opacity-100"><Icon name="x" size={24}/></button>
+                        </div>
+                        <div className="mb-8">
+                            <div className="flex gap-3 items-baseline mb-4">
+                                <span className="text-2xl font-mono font-bold opacity-80">{product.discountPrice || product.price} ₽</span>
+                                {product.discountPrice && <span className="text-sm font-mono opacity-20 line-through">{product.price} ₽</span>}
+                            </div>
+                            <p className="text-[13px] font-medium opacity-40 italic leading-relaxed">{product.description}</p>
+                        </div>
+                        <div className="mb-10">
+                            <h4 className="text-[10px] font-black uppercase mb-4 opacity-30 tracking-widest">Размер</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {product.sizes.map(s => (
+                                    <button 
+                                        key={s} 
+                                        onClick={() => setSize(s)} 
+                                        className={`min-w-[50px] h-12 flex items-center justify-center border font-black rounded-lg transition-all ${
+                                            size === s 
+                                            ? (theme === 'dark' ? 'bg-white text-black border-white' : 'bg-black text-white border-black') + ' scale-105 shadow-xl' 
+                                            : (theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-black/10 hover:border-black/30')
+                                        }`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className={`mt-auto pt-8 border-t ${theme === 'dark' ? 'border-white/5' : 'border-black/5'}`}>
+                            <button 
+                                disabled={!size} 
+                                onClick={() => size && onAdd(product, size)}
+                                className={`w-full py-5 flex items-center justify-center gap-3 font-black uppercase tracking-widest transition-all rounded-xl ${
+                                    size 
+                                    ? (theme === 'dark' ? 'bg-white text-black active:scale-95' : 'bg-black text-white shadow-2xl active:scale-95')
+                                    : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                }`}
+                            >
+                                <Icon name="shopping-cart" size={18} /> Добавить в корзину
+                            </button>
+                        </div>
+                    </div>
+                </React.Fragment>
+            );
         }
 
-        function toggleCart(s) {
-            const d = document.getElementById('cart-drawer'), o = document.getElementById('cart-overlay');
-            if(s) { d.classList.add('open'); o.classList.remove('hidden'); setTimeout(()=>o.style.opacity="1",10); }
-            else { d.classList.remove('open'); o.style.opacity="0"; setTimeout(()=>o.classList.add('hidden'),300); }
+        function CartContent({ items, theme, onClose, onRemove }) {
+            const total = items.reduce((s, i) => s + (i.discountPrice || i.price) * i.quantity, 0);
+            const [copied, setCopied] = useState(false);
+
+            const orderMsg = useMemo(() => {
+                if (items.length === 0) return "";
+                const list = items.map(i => `• ${i.name} (Размер: ${i.selectedSize}) — ${i.discountPrice || i.price} ₽ x ${i.quantity}`).join('\n');
+                return `Здравствуйте, я хочу купить:\n${list}\n\nИтого: ${total} ₽.`;
+            }, [items, total]);
+
+            const copy = () => {
+                navigator.clipboard.writeText(orderMsg);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            return (
+                <div className="flex flex-col h-full">
+                    <div className={`p-8 border-b flex justify-between items-center backdrop-blur-md transition-colors ${theme === 'dark' ? 'bg-zinc-900/80 border-white/5' : 'bg-white/80 border-black/5'}`}>
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter font-display flex items-center gap-2"><Icon name="shopping-bag" />Корзина</h2>
+                        <button onClick={onClose} className="hover:rotate-90 transition-transform opacity-30 hover:opacity-100"><Icon name="x" size={28}/></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                        {items.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center opacity-10 py-20"><Icon name="shopping-bag" size={64} /><p className="font-black uppercase text-xl mt-4">Пусто</p></div>
+                        ) : (
+                            <>
+                                <div className="space-y-4">
+                                    {items.map(i => (
+                                        <div key={`${i.id}-${i.selectedSize}`} className={`flex gap-4 border p-3 rounded-xl backdrop-blur-sm relative transition-colors ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-white/40 border-black/5'}`}>
+                                            <img src={i.images[0]} className="w-16 h-20 object-cover rounded-lg border border-black/5" onError={(e) => e.target.src=`https://picsum.photos/seed/${i.id}/100/120`} />
+                                            <div className="flex-1 py-1">
+                                                <h3 className="font-black uppercase text-[12px] leading-tight opacity-80">{i.name}</h3>
+                                                <span className={`text-[9px] font-black px-2 py-0.5 inline-block rounded-md mt-2 ${theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'}`}>SIZE: {i.selectedSize}</span>
+                                                <div className="mt-2 text-xs font-bold opacity-30 font-mono">{i.discountPrice || i.price} ₽ x {i.quantity}</div>
+                                            </div>
+                                            <button onClick={() => onRemove(i.id, i.selectedSize)} className="absolute top-2 right-2 opacity-20 hover:text-red-500 hover:opacity-100 transition-colors"><Icon name="trash-2" size={14} /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className={`mt-8 p-5 rounded-2xl border transition-colors ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-black/[0.02] border-black/5'}`}>
+                                    <p className="text-[10px] font-black uppercase mb-4 opacity-30 tracking-widest">Текст для заказа:</p>
+                                    <div className={`text-[11px] font-bold p-3 rounded-lg mb-4 opacity-70 italic whitespace-pre-wrap ${theme === 'dark' ? 'bg-black/40' : 'bg-white/80'}`}>{orderMsg}</div>
+                                    <div className="flex flex-col gap-2">
+                                        <button onClick={copy} className={`py-3 flex items-center justify-center gap-2 text-[10px] font-black uppercase rounded-lg transition-all shadow-sm ${theme === 'dark' ? 'bg-white text-black hover:bg-zinc-200' : 'bg-white border border-black/10 hover:bg-black hover:text-white'}`}>
+                                            {copied ? <><Icon name="check" size={14}/> Скопировано</> : <><Icon name="copy" size={14}/> Скопировать текст</>}
+                                        </button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <a href="https://t.me/telegram" target="_blank" className="py-3 bg-[#229ED9] text-white flex items-center justify-center text-[9px] font-black uppercase rounded-lg hover:brightness-110">Telegram</a>
+                                            <a href="https://t.me/max" target="_blank" className={`py-3 flex items-center justify-center text-[9px] font-black uppercase rounded-lg hover:opacity-80 transition-opacity ${theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'}`}>Макс</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    <div className={`p-8 border-t backdrop-blur-md transition-colors ${theme === 'dark' ? 'bg-zinc-900/80 border-white/5' : 'bg-white/80 border-black/5'}`}>
+                        <div className="flex justify-between items-center mb-6">
+                            <span className="font-black uppercase text-[10px] opacity-20 tracking-widest">Итого</span>
+                            <span className="text-3xl font-black italic tracking-tighter">{total} ₽</span>
+                        </div>
+                        <button 
+                            disabled={items.length === 0} 
+                            className={`w-full py-5 font-black uppercase tracking-widest text-[11px] rounded-xl active:scale-[0.98] transition-all ${
+                                items.length > 0 
+                                ? (theme === 'dark' ? 'bg-white text-black shadow-xl' : 'bg-black text-white shadow-xl') 
+                                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                            }`}
+                        >
+                            Оформить
+                        </button>
+                    </div>
+                </div>
+            );
         }
 
-        function selectSize(btn, s) { 
-            selectedSize = s; 
-            document.querySelectorAll('#modal-sizes button').forEach(b => b.classList.remove('bg-black', 'text-white'));
-            btn.classList.add('bg-black', 'text-white');
-        }
-
-        function copyOrder() {
-            const msg = `Заказ:\n${cart.map(i => `• ${i.name} [${i.selectedSize}]`).join('\n')}\nИтого: ${document.getElementById('cart-total').innerText}`;
-            navigator.clipboard.writeText(msg); alert("Текст заказа скопирован!");
-        }
-
-        function openInfo(t) { document.getElementById('info-title').innerText = infoData[t].title; document.getElementById('info-text').innerText = infoData[t].text; document.getElementById('info-modal').classList.add('active'); }
-        function closeProductModal() { document.getElementById('product-modal').classList.remove('active'); }
-        function closeInfoModal() { document.getElementById('info-modal').classList.remove('active'); }
-        function renderFilters() { const cats = ['Все', ...new Set(allProducts.map(p => p.cat))]; document.getElementById('category-filters').innerHTML = cats.map(c => `<button onclick="renderProducts('${c}'==='Все'?allProducts:allProducts.filter(p=>p.cat==='${c}'))" class="px-5 py-2 glass rounded-full text-[9px] font-black uppercase">${c}</button>`).join(''); }
-        function handleSearch() { const q = document.getElementById('search-input').value.toLowerCase(); renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(q))); }
-
-        window.onload = init;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
